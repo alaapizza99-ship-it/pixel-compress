@@ -203,7 +203,8 @@ class ImageService {
       final out = File('${dir.path}/pixelcompress_${stamp}_$i.${fmt.ext}');
       await out.writeAsBytes(bytes);
       results.add(ProcessResult(out, 'Photo ${i + 1}.${fmt.ext}',
-          await files[i].length(), bytes.length));
+          await files[i].length(), bytes.length,
+          original: files[i]));
       onProgress(i + 1, files.length);
     }
     return results;

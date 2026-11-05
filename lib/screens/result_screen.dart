@@ -4,6 +4,7 @@ import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models.dart';
 import '../widgets/banner_ad_widget.dart';
+import 'compare_screen.dart';
 
 class ResultScreen extends StatelessWidget {
   final List<ProcessResult> results;
@@ -101,7 +102,20 @@ class ResultScreen extends StatelessWidget {
 
   Widget _row(BuildContext context, ProcessResult r, ColorScheme cs) {
     final pct = r.savedPct;
-    return Container(
+    final canCompare = r.isImage && r.original != null;
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: canCompare
+          ? () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => CompareScreen(
+                      before: r.original!,
+                      after: r.file,
+                      beforeBytes: r.originalBytes,
+                      afterBytes: r.newBytes)))
+          : null,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -130,9 +144,10 @@ class ResultScreen extends StatelessWidget {
                 '  (${pct >= 0 ? '-' : '+'}${pct.abs().toStringAsFixed(0)}%)'),
           ]),
         ),
+        if (canCompare) const Icon(Icons.compare_rounded),
         IconButton(
             onPressed: () => _share([r]), icon: const Icon(Icons.share_rounded)),
       ]),
-    );
+    ));
   }
 }

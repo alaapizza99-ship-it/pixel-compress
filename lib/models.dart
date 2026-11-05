@@ -61,8 +61,9 @@ class ProcessResult {
   final int originalBytes;
   final int newBytes;
   final bool isImage;
+  final File? original;
   ProcessResult(this.file, this.label, this.originalBytes, this.newBytes,
-      {this.isImage = true});
+      {this.isImage = true, this.original});
 
   double get savedPct =>
       originalBytes == 0 ? 0 : (1 - newBytes / originalBytes) * 100;

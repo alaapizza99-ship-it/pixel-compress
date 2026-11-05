@@ -1,4 +1,4 @@
-// Temporary no-ads version used to isolate a launch crash.
+// Temporary no-ads version. Real ads come back after the AdMob account exists.
 class AdService {
   static String get bannerId => '';
   static Future<void> init() async {}

@@ -1,4 +1,4 @@
-"""Run in CI after `flutter create`: permissions, app name, minSdk (no ads)."""
+"""Run in CI after `flutter create`: permissions, app name, minSdk, dark launch screen."""
 import pathlib, re
 
 m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
@@ -18,5 +18,15 @@ for name in ('build.gradle.kts', 'build.gradle'):
         s = re.sub(r'minSdk(?:Version)?\s*=?\s*flutter\.minSdkVersion', 'minSdk = 24', s)
         f.write_text(s)
 
-print('Patched Android project (no ads).')
-print(m.read_text())
+# Dark launch background so there is no white flash before the first frame.
+launch = ('<?xml version="1.0" encoding="utf-8"?>\n'
+          '<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n'
+          '    <item><shape android:shape="rectangle">'
+          '<solid android:color="#FF12141A"/></shape></item>\n'
+          '</layer-list>\n')
+for d in ('drawable', 'drawable-v21'):
+    f = pathlib.Path('android/app/src/main/res') / d / 'launch_background.xml'
+    if f.exists():
+        f.write_text(launch)
+
+print('Patched Android project.')

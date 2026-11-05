@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/banner_ad_widget.dart';
+import 'settings_screen.dart';
 import 'tool_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -41,6 +42,14 @@ class HomeScreen extends StatelessWidget {
                         ? Icons.light_mode_rounded
                         : Icons.dark_mode_rounded),
                     onPressed: toggleTheme,
+                  ),
+                  IconButton(
+                    tooltip: 'Settings',
+                    icon: const Icon(Icons.settings_rounded),
+                    onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SettingsScreen())),
                   ),
                 ],
               ),
