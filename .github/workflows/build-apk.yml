@@ -1,23 +1,45 @@
-name: pixelcompress
-description: PixelCompress - Photo compressor, resizer, cropper and converter.
-publish_to: 'none'
-version: 1.0.0+1
+name: Build Android APK
 
-environment:
-  sdk: '>=3.3.0 <4.0.0'
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
 
-dependencies:
-  flutter:
-    sdk: flutter
-  image_picker: ^1.1.2
-  flutter_image_compress: ^2.3.0
-  image: ^4.2.0
-  pdf: ^3.11.1
-  path_provider: ^2.1.4
-  google_mobile_ads: any
-  share_plus: ^10.1.4
-  shared_preferences: ^2.3.3
-  gal: ^2.3.1
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-flutter:
-  uses-material-design: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android project
+        run: |
+          cp pubspec.yaml /tmp/pubspec.yaml
+          cp -r lib /tmp/lib
+          flutter create --org com.pixelcompress --project-name pixelcompress --platforms=android .
+          cp /tmp/pubspec.yaml pubspec.yaml
+          rm -rf lib test
+          cp -r /tmp/lib lib
+
+      - name: Patch AdMob, permissions, minSdk
+        run: python3 scripts/patch_android.py
+
+      - run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelCompress-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
