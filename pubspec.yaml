@@ -14,7 +14,7 @@ dependencies:
   image: ^4.2.0
   pdf: ^3.11.1
   path_provider: ^2.1.4
-  google_mobile_ads: ^5.2.0
+  google_mobile_ads: any
   share_plus: ^10.1.4
   shared_preferences: ^2.3.3
   gal: ^2.3.1
