@@ -25,15 +25,18 @@ jobs:
         run: |
           cp pubspec.yaml /tmp/pubspec.yaml
           cp -r lib /tmp/lib
-          flutter create --org com.pixelcompress --project-name pixelcompress --platforms=android .
+          flutter create --org com.alaa --project-name pixelcompress --platforms=android .
           cp /tmp/pubspec.yaml pubspec.yaml
           rm -rf lib test
           cp -r /tmp/lib lib
 
-      - name: Patch AdMob, permissions, minSdk
+      - name: Patch permissions, minSdk, launch screen
         run: python3 scripts/patch_android.py
 
       - run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
 
       - name: Build release APK
         run: flutter build apk --release --no-shrink
