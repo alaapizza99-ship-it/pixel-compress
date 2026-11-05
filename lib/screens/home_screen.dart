@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/banner_ad_widget.dart';
@@ -17,7 +18,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 8, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -30,21 +31,21 @@ class HomeScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                                 color: cs.primary)),
                         const SizedBox(height: 2),
-                        Text('Compress, resize & convert photos',
+                        Text(context.tr('tagline'),
                             style: TextStyle(
                                 color: cs.onSurface.withValues(alpha: .6))),
                       ],
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Toggle theme',
+                    tooltip: context.tr('toggle_theme'),
                     icon: Icon(isDark
                         ? Icons.light_mode_rounded
                         : Icons.dark_mode_rounded),
                     onPressed: toggleTheme,
                   ),
                   IconButton(
-                    tooltip: 'Settings',
+                    tooltip: context.tr('settings'),
                     icon: const Icon(Icons.settings_rounded),
                     onPressed: () => Navigator.push(
                         context,
@@ -77,6 +78,7 @@ class _ToolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -104,18 +106,21 @@ class _ToolCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tool.title,
+                      Text(context.tr(tool.titleKey),
                           style: const TextStyle(
                               fontSize: 17, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 3),
-                      Text(tool.subtitle,
+                      Text(context.tr(tool.subtitleKey),
                           style: TextStyle(
                               color: cs.onSurface.withValues(alpha: .6),
                               fontSize: 13)),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded,
+                Icon(
+                    rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
                     color: cs.onSurface.withValues(alpha: .5)),
               ],
             ),

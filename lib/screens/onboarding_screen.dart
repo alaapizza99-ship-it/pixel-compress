@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,22 +13,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pc = PageController();
   int _i = 0;
 
+  // icon, title key, description key
   static const _pages = [
-    (
-      Icons.compress_rounded,
-      'Shrink photos, keep quality',
-      'Make photos much smaller so they upload and send faster.'
-    ),
-    (
-      Icons.tune_rounded,
-      'Resize, crop, blur & convert',
-      'Change dimensions, crop to any ratio, blur, or convert between JPG, PNG, WEBP, HEIC and PDF.'
-    ),
-    (
-      Icons.photo_library_rounded,
-      'Process many photos at once',
-      'Select several photos, then save them to your gallery or share them. Your photos are processed on your phone.'
-    ),
+    (Icons.compress_rounded, 'ob1_t', 'ob1_d'),
+    (Icons.tune_rounded, 'ob2_t', 'ob2_d'),
+    (Icons.photo_library_rounded, 'ob3_t', 'ob3_d'),
   ];
 
   Future<void> _finish() async {
@@ -55,10 +45,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: Column(
           children: [
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: TextButton(
                   onPressed: _finish,
-                  child: Text(last ? '' : 'Skip')),
+                  child: Text(last ? '' : context.tr('skip'))),
             ),
             Expanded(
               child: PageView.builder(
@@ -66,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 itemCount: _pages.length,
                 onPageChanged: (v) => setState(() => _i = v),
                 itemBuilder: (_, i) {
-                  final (icon, title, text) = _pages[i];
+                  final (icon, titleKey, textKey) = _pages[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Column(
@@ -81,12 +71,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Icon(icon, size: 64, color: cs.primary),
                         ),
                         const SizedBox(height: 36),
-                        Text(title,
+                        Text(context.tr(titleKey),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.w800)),
                         const SizedBox(height: 14),
-                        Text(text,
+                        Text(context.tr(textKey),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 fontSize: 15,
@@ -123,7 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     : () => _pc.nextPage(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut),
-                child: Text(last ? 'Get started' : 'Next'),
+                child: Text(last ? context.tr('get_started') : context.tr('next')),
               ),
             ),
           ],

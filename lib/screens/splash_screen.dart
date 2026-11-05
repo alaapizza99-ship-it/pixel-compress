@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n.dart';
 import 'home_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -72,8 +73,8 @@ class _SplashScreenState extends State<SplashScreen>
                         fontSize: 28,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
-                const Text('Compress, resize & convert photos',
-                    style: TextStyle(color: Colors.white60)),
+                Text(context.tr('tagline'),
+                    style: const TextStyle(color: Colors.white60)),
               ],
             ),
           ),

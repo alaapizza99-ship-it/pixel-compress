@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
+import '../l10n.dart';
 import '../theme.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -18,44 +19,44 @@ class SettingsScreen extends StatelessWidget {
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not open the link')));
+          .showSnackBar(SnackBar(content: Text(context.tr('link_fail'))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(context.tr('settings'))),
       body: ListView(
         children: [
           ValueListenableBuilder<ThemeMode>(
             valueListenable: themeNotifier,
             builder: (_, mode, __) => SwitchListTile(
               secondary: const Icon(Icons.dark_mode_rounded),
-              title: const Text('Dark theme'),
+              title: Text(context.tr('dark_theme')),
               value: mode == ThemeMode.dark,
               onChanged: (_) => toggleTheme(),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.star_rate_rounded),
-            title: const Text('Rate the app'),
-            onTap: () => _open(context,
-                ['market://details?id=$kPackageName', kStoreUrl]),
+            title: Text(context.tr('rate_app')),
+            onTap: () => _open(
+                context, ['market://details?id=$kPackageName', kStoreUrl]),
           ),
           ListTile(
             leading: const Icon(Icons.share_rounded),
-            title: const Text('Share the app'),
-            onTap: () => Share.share(
-                'Compress, resize and convert photos with PixelCompress: $kStoreUrl'),
+            title: Text(context.tr('share_app')),
+            onTap: () =>
+                Share.share(context.tr('share_text', {'url': kStoreUrl})),
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_rounded),
-            title: const Text('Privacy policy'),
+            title: Text(context.tr('privacy')),
             onTap: () {
               if (kPrivacyPolicyUrl.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon')));
+                    SnackBar(content: Text(context.tr('coming_soon'))));
               } else {
                 _open(context, [kPrivacyPolicyUrl]);
               }
@@ -63,8 +64,8 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.info_outline_rounded),
-            title: const Text('About'),
-            subtitle: const Text('Version $kAppVersion'),
+            title: Text(context.tr('about')),
+            subtitle: Text(context.tr('version', {'v': kAppVersion})),
             onTap: () => showAboutDialog(
               context: context,
               applicationName: 'PixelCompress',

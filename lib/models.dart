@@ -4,20 +4,8 @@ import 'package:flutter/material.dart';
 enum Tool { compress, resize, crop, blur, convert }
 
 extension ToolInfo on Tool {
-  String get title => switch (this) {
-        Tool.compress => 'Compress Photo',
-        Tool.resize => 'Resize Photo',
-        Tool.crop => 'Crop Photo',
-        Tool.blur => 'Blur Photo',
-        Tool.convert => 'Convert Photo',
-      };
-  String get subtitle => switch (this) {
-        Tool.compress => 'Shrink file size, keep quality',
-        Tool.resize => 'By pixels or percentage',
-        Tool.crop => 'Square, 4:3, 16:9 and more',
-        Tool.blur => 'Soften or hide details',
-        Tool.convert => 'JPG, PNG, WEBP, HEIC, PDF',
-      };
+  String get titleKey => 'tool_${name}_title';
+  String get subtitleKey => 'tool_${name}_sub';
   IconData get icon => switch (this) {
         Tool.compress => Icons.compress_rounded,
         Tool.resize => Icons.aspect_ratio_rounded,
@@ -50,9 +38,15 @@ class ProcessOptions {
   double? cropAspect; // width / height
   int blurRadius = 0;
   bool mergePdf = true;
+  int? targetKb; // compress to at most this many KB (compress tool only)
+
+  /// Hand-drawn crop frames, per photo path, as fractions (0..1) of the photo.
+  final Map<String, Rect> cropRects = {};
 
   bool get needsPixelOps =>
       resize != ResizeKind.none || cropAspect != null || blurRadius > 0;
+
+  bool needsPixelFor(File f) => needsPixelOps || cropRects.containsKey(f.path);
 }
 
 class ProcessResult {

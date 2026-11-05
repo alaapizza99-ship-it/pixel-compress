@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../l10n.dart';
 import '../models.dart';
 import '../services/ad_service.dart';
 import '../services/image_service.dart';
 import '../widgets/banner_ad_widget.dart';
+import 'crop_editor_screen.dart';
 import 'result_screen.dart';
 
 class ToolScreen extends StatefulWidget {
@@ -22,8 +24,11 @@ class _ToolScreenState extends State<ToolScreen> {
   final _o = ProcessOptions();
   final _wCtl = TextEditingController();
   final _hCtl = TextEditingController();
+  final _targetCtl = TextEditingController();
   bool _busy = false;
   double _progress = 0;
+  bool _byTarget = false; // compress tool: false = by quality, true = target size
+  int _targetKb = 200;
 
   @override
   void initState() {
@@ -56,6 +61,7 @@ class _ToolScreenState extends State<ToolScreen> {
   void dispose() {
     _wCtl.dispose();
     _hCtl.dispose();
+    _targetCtl.dispose();
     super.dispose();
   }
 
@@ -71,18 +77,39 @@ class _ToolScreenState extends State<ToolScreen> {
     if (mounted) setState(() {});
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  Future<void> _cropFile(File f) async {
+    final r = await Navigator.push<Rect>(
+        context,
+        MaterialPageRoute(
+            builder: (_) => CropEditorScreen(
+                file: f,
+                aspect: _o.cropAspect,
+                initial: _o.cropRects[f.path])));
+    if (r != null && mounted) setState(() => _o.cropRects[f.path] = r);
+  }
+
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   Future<void> _run() async {
-    if (_files.isEmpty) return _snack('Select at least one photo first');
+    if (_files.isEmpty) return _snack(context.tr('err_select_first'));
+
     if (widget.tool == Tool.resize && _o.resize == ResizeKind.dimensions) {
       _o.width = int.tryParse(_wCtl.text);
       _o.height = int.tryParse(_hCtl.text);
       if (_o.width == null && _o.height == null) {
-        return _snack('Enter a width, a height, or both');
+        return _snack(context.tr('err_dims'));
       }
     }
+
+    if (widget.tool == Tool.compress && _byTarget) {
+      final kb = int.tryParse(_targetCtl.text) ?? _targetKb;
+      if (kb < 10) return _snack(context.tr('err_target'));
+      _o.targetKb = kb;
+    } else {
+      _o.targetKb = null;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() {
       _busy = true;
@@ -96,9 +123,11 @@ class _ToolScreenState extends State<ToolScreen> {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => ResultScreen(results: results)));
     } catch (e) {
-      _snack(_o.format == OutFormat.heic
-          ? 'HEIC output needs Android 11 or newer. Try WEBP or JPG.'
-          : 'Something went wrong: $e');
+      if (mounted) {
+        _snack(_o.format == OutFormat.heic
+            ? context.tr('err_heic')
+            : context.tr('err_generic', {'e': e}));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -109,7 +138,7 @@ class _ToolScreenState extends State<ToolScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.tool.title)),
+      appBar: AppBar(title: Text(context.tr(widget.tool.titleKey))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -129,14 +158,14 @@ class _ToolScreenState extends State<ToolScreen> {
                   ? Column(children: [
                       LinearProgressIndicator(value: _progress),
                       const SizedBox(height: 8),
-                      const Text('Processing…'),
+                      Text(context.tr('processing')),
                     ])
                   : FilledButton.icon(
                       onPressed: _run,
                       icon: Icon(widget.tool.icon),
                       label: Text(_files.isEmpty
-                          ? 'Start'
-                          : 'Start (${_files.length} photo${_files.length > 1 ? 's' : ''})'),
+                          ? context.tr('start')
+                          : context.tr('start_n', {'n': _files.length})),
                     ),
             ),
             const BannerAdWidget(),
@@ -156,15 +185,17 @@ class _ToolScreenState extends State<ToolScreen> {
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cs.primary.withValues(alpha: .5), width: 1.5),
+            border:
+                Border.all(color: cs.primary.withValues(alpha: .5), width: 1.5),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add_photo_alternate_rounded, size: 46, color: cs.primary),
+              Icon(Icons.add_photo_alternate_rounded,
+                  size: 46, color: cs.primary),
               const SizedBox(height: 8),
-              const Text('Select photos (multiple allowed)',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(context.tr('select_photos'),
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -174,13 +205,13 @@ class _ToolScreenState extends State<ToolScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          Text('${_files.length} selected',
+          Text(context.tr('n_selected', {'n': _files.length}),
               style: const TextStyle(fontWeight: FontWeight.w700)),
           const Spacer(),
           TextButton.icon(
               onPressed: _pick,
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add more')),
+              label: Text(context.tr('add_more'))),
         ]),
         GridView.builder(
           shrinkWrap: true,
@@ -190,7 +221,10 @@ class _ToolScreenState extends State<ToolScreen> {
               crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8),
           itemBuilder: (_, i) {
             final f = _files[i];
-            return ClipRRect(
+            final hasCrop = _o.cropRects.containsKey(f.path);
+            return GestureDetector(
+              onTap: widget.tool == Tool.crop ? () => _cropFile(f) : null,
+              child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Stack(fit: StackFit.expand, children: [
                 Image.file(f,
@@ -198,6 +232,19 @@ class _ToolScreenState extends State<ToolScreen> {
                     cacheWidth: 300,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.image_not_supported_rounded)),
+                if (widget.tool == Tool.crop)
+                  Positioned(
+                    top: 2,
+                    left: 2,
+                    child: CircleAvatar(
+                        radius: 11,
+                        backgroundColor: hasCrop
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.black54,
+                        child: Icon(Icons.crop_rounded,
+                            size: 14,
+                            color: hasCrop ? Colors.black : Colors.white)),
+                  ),
                 Positioned(
                   left: 0,
                   right: 0,
@@ -207,7 +254,9 @@ class _ToolScreenState extends State<ToolScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Text(fmtBytes(_sizes[f.path] ?? 0),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 11)),
+                        textDirection: TextDirection.ltr,
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 11)),
                   ),
                 ),
                 Positioned(
@@ -216,16 +265,18 @@ class _ToolScreenState extends State<ToolScreen> {
                   child: GestureDetector(
                     onTap: () => setState(() {
                       _sizes.remove(f.path);
+                      _o.cropRects.remove(f.path);
                       _files.removeAt(i);
                     }),
                     child: const CircleAvatar(
                         radius: 11,
                         backgroundColor: Colors.black54,
-                        child: Icon(Icons.close, size: 14, color: Colors.white)),
+                        child:
+                            Icon(Icons.close, size: 14, color: Colors.white)),
                   ),
                 ),
               ]),
-            );
+            ));
           },
         ),
       ],
@@ -240,21 +291,12 @@ class _ToolScreenState extends State<ToolScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: switch (widget.tool) {
-          Tool.compress => [
-              _label('Compression level'),
-              Wrap(spacing: 8, children: [
-                _preset('Small file', 30),
-                _preset('Medium', 60),
-                _preset('Large file', 85),
-              ]),
-              _quality(),
-              _label('Output format'),
-              _formatChips(const [OutFormat.jpg, OutFormat.webp]),
-            ],
+          Tool.compress => _compressOptions(),
           Tool.resize => _resizeOptions(),
           Tool.crop => [
-              _label('Aspect ratio (center crop)'),
+              _label(context.tr('aspect_title')),
               Wrap(spacing: 8, children: [
+                _aspectFree(),
                 _aspect('1:1', 1),
                 _aspect('4:3', 4 / 3),
                 _aspect('3:4', 3 / 4),
@@ -262,10 +304,13 @@ class _ToolScreenState extends State<ToolScreen> {
                 _aspect('16:9', 16 / 9),
                 _aspect('9:16', 9 / 16),
               ]),
+              const SizedBox(height: 8),
+              Text(context.tr('crop_hint'),
+                  style: const TextStyle(fontSize: 12)),
               _quality(),
             ],
           Tool.blur => [
-              _label('Blur strength: ${_o.blurRadius}'),
+              _label(context.tr('blur_strength', {'n': _o.blurRadius})),
               Slider(
                   value: _o.blurRadius.toDouble(),
                   min: 1,
@@ -275,7 +320,7 @@ class _ToolScreenState extends State<ToolScreen> {
               _quality(),
             ],
           Tool.convert => [
-              _label('Convert to'),
+              _label(context.tr('convert_to')),
               _formatChips(const [
                 OutFormat.jpg,
                 OutFormat.png,
@@ -286,7 +331,7 @@ class _ToolScreenState extends State<ToolScreen> {
               if (_o.format == OutFormat.pdf)
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Merge all photos into one PDF'),
+                  title: Text(context.tr('merge_pdf')),
                   value: _o.mergePdf,
                   onChanged: (v) => setState(() => _o.mergePdf = v),
                 ),
@@ -297,17 +342,69 @@ class _ToolScreenState extends State<ToolScreen> {
     );
   }
 
+  List<Widget> _compressOptions() => [
+        SegmentedButton<bool>(
+          segments: [
+            ButtonSegment(
+                value: false,
+                label: Text(context.tr('mode_quality')),
+                icon: const Icon(Icons.tune_rounded)),
+            ButtonSegment(
+                value: true,
+                label: Text(context.tr('mode_target')),
+                icon: const Icon(Icons.straighten_rounded)),
+          ],
+          selected: {_byTarget},
+          onSelectionChanged: (s) => setState(() => _byTarget = s.first),
+        ),
+        if (!_byTarget) ...[
+          _label(context.tr('compression_level')),
+          Wrap(spacing: 8, children: [
+            _preset(context.tr('preset_small'), 30),
+            _preset(context.tr('preset_medium'), 60),
+            _preset(context.tr('preset_large'), 85),
+          ]),
+          _quality(),
+        ] else ...[
+          _label(context.tr('max_size')),
+          Wrap(spacing: 8, children: [
+            for (final kb in const [50, 100, 200, 500, 1024])
+              ChoiceChip(
+                label: Text(kb == 1024 ? '1 MB' : '$kb KB'),
+                selected: _targetCtl.text.isEmpty && _targetKb == kb,
+                onSelected: (_) => setState(() {
+                  _targetCtl.clear();
+                  _targetKb = kb;
+                }),
+              ),
+          ]),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _targetCtl,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+                labelText: context.tr('target_custom'),
+                border: const OutlineInputBorder()),
+          ),
+          const SizedBox(height: 6),
+          Text(context.tr('target_hint'), style: const TextStyle(fontSize: 12)),
+        ],
+        _label(context.tr('output_format')),
+        _formatChips(const [OutFormat.jpg, OutFormat.webp]),
+      ];
+
   List<Widget> _resizeOptions() => [
         SegmentedButton<ResizeKind>(
-          segments: const [
+          segments: [
             ButtonSegment(
                 value: ResizeKind.dimensions,
-                label: Text('Pixels'),
-                icon: Icon(Icons.straighten_rounded)),
+                label: Text(context.tr('resize_pixels')),
+                icon: const Icon(Icons.straighten_rounded)),
             ButtonSegment(
                 value: ResizeKind.percent,
-                label: Text('Percent'),
-                icon: Icon(Icons.percent_rounded)),
+                label: Text(context.tr('resize_percent')),
+                icon: const Icon(Icons.percent_rounded)),
           ],
           selected: {_o.resize},
           onSelectionChanged: (s) => setState(() => _o.resize = s.first),
@@ -315,27 +412,26 @@ class _ToolScreenState extends State<ToolScreen> {
         const SizedBox(height: 12),
         if (_o.resize == ResizeKind.dimensions) ...[
           Row(children: [
-            Expanded(child: _num(_wCtl, 'Width (px)')),
+            Expanded(child: _num(_wCtl, context.tr('width_px'))),
             const SizedBox(width: 12),
-            Expanded(child: _num(_hCtl, 'Height (px)')),
+            Expanded(child: _num(_hCtl, context.tr('height_px'))),
           ]),
           const SizedBox(height: 4),
-          const Text('Fill only one box to keep the original proportions.',
-              style: TextStyle(fontSize: 12)),
-          _label('If both are set and the shape differs'),
+          Text(context.tr('dims_hint'), style: const TextStyle(fontSize: 12)),
+          _label(context.tr('fit_title')),
           Wrap(spacing: 8, children: [
-            for (final (m, n) in [
-              (FitMode.crop, 'Crop'),
-              (FitMode.stretch, 'Stretch'),
-              (FitMode.blur, 'Fit + blur')
+            for (final (m, k) in [
+              (FitMode.crop, 'fit_crop'),
+              (FitMode.stretch, 'fit_stretch'),
+              (FitMode.blur, 'fit_blur')
             ])
               ChoiceChip(
-                  label: Text(n),
+                  label: Text(context.tr(k)),
                   selected: _o.fit == m,
                   onSelected: (_) => setState(() => _o.fit = m)),
           ]),
         ] else ...[
-          _label('Scale: ${_o.percent.round()}%'),
+          _label(context.tr('scale_pct', {'n': _o.percent.round()})),
           Slider(
               value: _o.percent,
               min: 10,
@@ -354,14 +450,14 @@ class _ToolScreenState extends State<ToolScreen> {
   Widget _num(TextEditingController c, String hint) => TextField(
         controller: c,
         keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-            labelText: hint, border: const OutlineInputBorder()),
+        decoration:
+            InputDecoration(labelText: hint, border: const OutlineInputBorder()),
       );
 
   Widget _quality() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _label('Quality: ${_o.quality}%'),
+          _label(context.tr('quality_n', {'n': _o.quality})),
           Slider(
               value: _o.quality.toDouble(),
               min: 10,
@@ -379,7 +475,18 @@ class _ToolScreenState extends State<ToolScreen> {
   Widget _aspect(String n, double r) => ChoiceChip(
       label: Text(n),
       selected: _o.cropAspect == r,
-      onSelected: (_) => setState(() => _o.cropAspect = r));
+      onSelected: (_) => setState(() {
+            _o.cropAspect = r;
+            _o.cropRects.clear();
+          }));
+
+  Widget _aspectFree() => ChoiceChip(
+      label: Text(context.tr('crop_free')),
+      selected: _o.cropAspect == null,
+      onSelected: (_) => setState(() {
+            _o.cropAspect = null;
+            _o.cropRects.clear();
+          }));
 
   Widget _formatChips(List<OutFormat> fs) => Wrap(spacing: 8, children: [
         for (final f in fs)

@@ -1,5 +1,6 @@
-"""Run in CI after `flutter create`: permissions, app name, minSdk, dark launch screen."""
-import pathlib, re
+"""Run in CI after `flutter create`: permissions, app name, minSdk,
+dark launch screen and release signing (uses android/key.properties if present)."""
+import pathlib, re, sys
 
 m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
 t = m.read_text()
@@ -28,5 +29,56 @@ for d in ('drawable', 'drawable-v21'):
     f = pathlib.Path('android/app/src/main/res') / d / 'launch_background.xml'
     if f.exists():
         f.write_text(launch)
+
+# ---- release signing ----
+# If android/key.properties exists (written by the workflow from GitHub secrets)
+# the release build is signed with the upload key; otherwise it falls back to the
+# debug key so test builds keep working.
+strict = pathlib.Path('android/key.properties').exists()
+kts = pathlib.Path('android/app/build.gradle.kts')
+ok = False
+if kts.exists():
+    s = kts.read_text()
+    if 'keystoreProperties' not in s:
+        imports = 'import java.util.Properties\nimport java.io.FileInputStream\n\n'
+        props = (
+            'val keystoreProperties = Properties()\n'
+            'val keystorePropertiesFile = rootProject.file("key.properties")\n'
+            'if (keystorePropertiesFile.exists()) {\n'
+            '    keystoreProperties.load(FileInputStream(keystorePropertiesFile))\n'
+            '}\n\n'
+        )
+        block = (
+            '    signingConfigs {\n'
+            '        create("release") {\n'
+            '            if (keystorePropertiesFile.exists()) {\n'
+            '                keyAlias = keystoreProperties["keyAlias"] as String\n'
+            '                keyPassword = keystoreProperties["keyPassword"] as String\n'
+            '                storeFile = file(keystoreProperties["storeFile"] as String)\n'
+            '                storePassword = keystoreProperties["storePassword"] as String\n'
+            '            }\n'
+            '        }\n'
+            '    }\n\n'
+        )
+        s2, n1 = re.subn(r'(\n[ \t]*buildTypes\s*\{)', lambda mo: '\n' + block.rstrip('\n') + mo.group(1), s, count=1)
+        s2, n2 = re.subn(
+            r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
+            'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")',
+            s2)
+        # the property loading must come AFTER the plugins {} block, before android {}
+        s2, n3 = re.subn(r'(\n)(android\s*\{)', lambda mo: '\n' + props + mo.group(2), s2, count=1)
+        if n1 == 1 and n2 >= 1 and n3 == 1:
+            kts.write_text(imports + s2)
+            ok = True
+    else:
+        ok = True
+
+if ok:
+    print('Signing configured (release key used when key.properties exists).')
+elif strict:
+    print('ERROR: could not patch release signing into build.gradle.kts')
+    sys.exit(1)
+else:
+    print('WARNING: signing patch not applied (no key.properties, debug-signed build).')
 
 print('Patched Android project.')

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
@@ -16,7 +17,14 @@ Uint8List _pixelOps(Map<String, dynamic> a) {
 
   // 1) crop to aspect ratio (center crop)
   final ca = a['cropAspect'] as double?;
-  if (ca != null) {
+  final cr = (a['cropRect'] as List?)?.cast<double>(); // l, t, r, b as fractions
+  if (cr != null) {
+    final x = (cr[0] * image.width).round().clamp(0, image.width - 1);
+    final y = (cr[1] * image.height).round().clamp(0, image.height - 1);
+    final w = ((cr[2] - cr[0]) * image.width).round().clamp(1, image.width - x);
+    final h = ((cr[3] - cr[1]) * image.height).round().clamp(1, image.height - y);
+    image = img.copyCrop(image, x: x, y: y, width: w, height: h);
+  } else if (ca != null) {
     final cur = image.width / image.height;
     var w = image.width, h = image.height;
     if (cur > ca) {
@@ -95,7 +103,48 @@ Uint8List _pixelOps(Map<String, dynamic> a) {
       : Uint8List.fromList(img.encodeJpg(image, quality: 95));
 }
 
+/// A downscaled, orientation-corrected copy of a photo for the crop editor.
+/// It goes through the same decode + bakeOrientation as the real processing,
+/// so a frame drawn on it lands on exactly the same pixels in the final photo.
+class CropPreview {
+  final Uint8List bytes;
+  final int width;
+  final int height;
+  CropPreview(this.bytes, this.width, this.height);
+}
+
+Map<String, dynamic> _previewOps(Uint8List bytes) {
+  var image = img.decodeImage(bytes);
+  if (image == null) throw Exception('Unsupported image format');
+  image = img.bakeOrientation(image);
+  if (image.width > 1600 || image.height > 1600) {
+    image = image.width >= image.height
+        ? img.copyResize(image, width: 1600)
+        : img.copyResize(image, height: 1600);
+  }
+  return {
+    'bytes': Uint8List.fromList(img.encodeJpg(image, quality: 85)),
+    'w': image.width,
+    'h': image.height,
+  };
+}
+
 class ImageService {
+  static Future<CropPreview> prepareCropPreview(File f) async {
+    var bytes = await f.readAsBytes();
+    final e = _ext(f);
+    if (e == 'heic' || e == 'heif') {
+      final j = await FlutterImageCompress.compressWithFile(f.path,
+          quality: 100,
+          format: CompressFormat.jpeg,
+          minWidth: 10000,
+          minHeight: 10000);
+      if (j != null) bytes = j;
+    }
+    final r = await compute(_previewOps, bytes);
+    return CropPreview(r['bytes'] as Uint8List, r['w'] as int, r['h'] as int);
+  }
+
   static CompressFormat _cf(OutFormat f) => switch (f) {
         OutFormat.png => CompressFormat.png,
         OutFormat.webp => CompressFormat.webp,
@@ -116,7 +165,11 @@ class ImageService {
   static Future<Uint8List> _encode(
       File f, ProcessOptions o, OutFormat fmt) async {
     final cf = _cf(fmt);
-    if (!o.needsPixelOps) {
+    final px = o.needsPixelFor(f);
+    if (o.targetKb != null && !px) {
+      return _encodeToTarget(f, o.targetKb! * 1024, cf);
+    }
+    if (!px) {
       final out = await FlutterImageCompress.compressWithFile(f.path,
           quality: o.quality,
           format: cf,
@@ -139,6 +192,14 @@ class ImageService {
     final edited = await compute(_pixelOps, <String, dynamic>{
       'bytes': bytes,
       'cropAspect': o.cropAspect,
+      'cropRect': o.cropRects[f.path] == null
+          ? null
+          : [
+              o.cropRects[f.path]!.left,
+              o.cropRects[f.path]!.top,
+              o.cropRects[f.path]!.right,
+              o.cropRects[f.path]!.bottom,
+            ],
       'resize': o.resize.index,
       'fit': o.fit.index,
       'percent': o.percent,
@@ -149,6 +210,61 @@ class ImageService {
     });
     return FlutterImageCompress.compressWithList(edited,
         quality: o.quality, format: cf, minWidth: 10000, minHeight: 10000);
+  }
+
+  /// Finds the highest quality whose output fits in [target] bytes.
+  /// If even the lowest quality is too big, the photo is scaled down step by step.
+  static Future<Uint8List> _encodeToTarget(
+      File f, int target, CompressFormat cf) async {
+    var w = 4000, h = 4000;
+    try {
+      final raw = await f.readAsBytes();
+      final buf = await ui.ImmutableBuffer.fromUint8List(raw);
+      final desc = await ui.ImageDescriptor.encoded(buf);
+      w = desc.width;
+      h = desc.height;
+      desc.dispose();
+      buf.dispose();
+    } catch (_) {}
+    final shortSide = w < h ? w : h;
+
+    Future<Uint8List> enc(int q, double s) async {
+      // Both minimums equal the short side * s, so the scale is the same
+      // whatever the photo's rotation.
+      final m = (shortSide * s).round().clamp(1, 100000);
+      final out = await FlutterImageCompress.compressWithFile(f.path,
+          quality: q,
+          format: cf,
+          minWidth: m,
+          minHeight: m,
+          keepExif: false);
+      if (out == null) throw Exception('Could not process this image');
+      return out;
+    }
+
+    const minQ = 30;
+    var scale = 1.0;
+    var last = Uint8List(0);
+    for (var attempt = 0; attempt < 8; attempt++) {
+      last = await enc(minQ, scale);
+      if (last.length <= target) {
+        var best = last;
+        var lo = minQ + 1, hi = 95;
+        while (lo <= hi) {
+          final mid = (lo + hi) ~/ 2;
+          final out = await enc(mid, scale);
+          if (out.length <= target) {
+            best = out;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        return best;
+      }
+      scale *= 0.8;
+    }
+    return last;
   }
 
   static Future<Uint8List> _pdf(List<Uint8List> jpgs) async {
