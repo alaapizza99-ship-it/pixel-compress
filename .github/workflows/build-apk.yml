@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK + AAB
 
 on:
   push:
@@ -30,7 +30,22 @@ jobs:
           rm -rf lib test
           cp -r /tmp/lib lib
 
-      - name: Patch permissions, minSdk, launch screen
+      - name: Set up release signing (if secrets exist)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/upload-keystore.jks"
+            printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=upload\nstoreFile=%s\n' \
+              "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" "$GITHUB_WORKSPACE/upload-keystore.jks" \
+              > android/key.properties
+            echo "Release signing: ENABLED (upload key)"
+          else
+            echo "Release signing: not configured (debug-signed build - NOT for Play Store)"
+          fi
+
+      - name: Patch permissions, minSdk, launch screen, signing
         run: python3 scripts/patch_android.py
 
       - run: flutter pub get
@@ -39,10 +54,19 @@ jobs:
         run: dart run flutter_launcher_icons
 
       - name: Build release APK
-        run: flutter build apk --release --no-shrink
+        run: flutter build apk --release --no-shrink --build-number=${{ github.run_number }}
+
+      - name: Build release AAB (for Google Play)
+        run: flutter build appbundle --release --no-shrink --build-number=${{ github.run_number }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: PixelCompress-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelCompress-AAB
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
