@@ -1,7 +1,7 @@
 name: pixelcompress
 description: PixelCompress - Photo compressor, resizer, cropper and converter.
 publish_to: 'none'
-version: 1.3.0+4
+version: 1.4.0+5
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -20,6 +20,7 @@ dependencies:
   shared_preferences: ^2.3.3
   gal: ^2.3.1
   url_launcher: ^6.3.0
+  google_mobile_ads: any
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.1

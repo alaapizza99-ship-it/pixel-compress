@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n.dart';
 import 'home_screen.dart';
+import 'online_gate.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -27,7 +28,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (_) {}
     if (!mounted) return;
     Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        context, MaterialPageRoute(
+            builder: (_) => const OnlineGate(child: HomeScreen())));
   }
 
   @override

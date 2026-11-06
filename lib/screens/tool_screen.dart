@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../l10n.dart';
 import '../models.dart';
 import '../services/ad_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/premium_service.dart';
 import '../services/image_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'crop_editor_screen.dart';
@@ -93,6 +95,10 @@ class _ToolScreenState extends State<ToolScreen> {
 
   Future<void> _run() async {
     if (_files.isEmpty) return _snack(context.tr('err_select_first'));
+    if (!PremiumService.isPremium.value && !await ConnectivityService.hasInternet()) {
+      if (mounted) _snack(context.tr('err_offline'));
+      return;
+    }
 
     if (widget.tool == Tool.resize && _o.resize == ResizeKind.dimensions) {
       _o.width = int.tryParse(_wCtl.text);

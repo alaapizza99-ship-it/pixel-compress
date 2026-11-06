@@ -7,4 +7,4 @@ const String kStoreUrl =
 const String kPrivacyPolicyUrl =
     'https://alaapizza99-ship-it.github.io/pixelcompress-privacy/';
 
-const String kAppVersion = '1.3.0';
+const String kAppVersion = '1.4.0';

@@ -2,15 +2,24 @@
 dark launch screen and release signing (uses android/key.properties if present)."""
 import pathlib, re, sys
 
+cfg = pathlib.Path('lib/config/ad_config.dart').read_text()
+app_id = re.search(r"kAdmobAppId\s*=\s*'([^']+)'", cfg).group(1)
+
 m = pathlib.Path('android/app/src/main/AndroidManifest.xml')
 t = m.read_text()
 t = re.sub(r'android:label="[^"]*"', 'android:label="PixelCompress"', t, count=1)
 perms = (
     '    <uses-permission android:name="android.permission.INTERNET"/>\n'
+    '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
+    '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>\n'
     '    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>\n'
 )
 t = t.replace('<application', perms + '    <application', 1)
+meta = ('        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" '
+        f'android:value="{app_id}"/>\n')
+t = t.replace('</application>', meta + '    </application>', 1)
 m.write_text(t)
+print('AdMob app id:', app_id)
 
 for name in ('build.gradle.kts', 'build.gradle'):
     f = pathlib.Path('android/app') / name

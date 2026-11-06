@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n.dart';
 import 'home_screen.dart';
 import 'onboarding_screen.dart';
+import 'online_gate.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,7 +36,9 @@ class _SplashScreenState extends State<SplashScreen>
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 350),
         pageBuilder: (_, __, ___) =>
-            done ? const HomeScreen() : const OnboardingScreen(),
+            done
+            ? const OnlineGate(child: HomeScreen())
+            : const OnboardingScreen(),
         transitionsBuilder: (_, a, __, child) =>
             FadeTransition(opacity: a, child: child),
       ),

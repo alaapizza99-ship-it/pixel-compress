@@ -6,6 +6,9 @@
 //    below, then set kUseTestAds = false and push to GitHub.
 // Never click your own live ads - AdMob can ban the account.
 
+// Master switch: set to false to turn ALL ads off (e.g. if ads ever cause a problem).
+const bool kAdsEnabled = true;
+
 const bool kUseTestAds = true;
 
 // AdMob *App* ID (format: ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY).

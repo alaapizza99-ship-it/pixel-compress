@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n.dart';
 import 'screens/splash_screen.dart';
 import 'services/ad_service.dart';
+import 'services/premium_service.dart';
 import 'theme.dart';
 
 /// Any startup/runtime error is shown as a red bar so it can be reported.
@@ -15,6 +16,7 @@ Future<void> main() async {
     FlutterError.onError = (d) => lastError.value = d.exceptionAsString();
     try {
       await loadTheme();
+      await PremiumService.load();
     } catch (_) {}
     runApp(const PixelCompressApp());
 
