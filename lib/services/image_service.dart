@@ -267,6 +267,23 @@ class ImageService {
     return last;
   }
 
+  /// Re-encodes at progressively lower quality until the result is smaller than
+  /// [originalSize]. Returns null when no quality gets below the original.
+  static Future<Uint8List?> _encodeSmaller(
+      File f, ProcessOptions o, OutFormat fmt, int originalSize) async {
+    for (final step in const [0.75, 0.55, 0.4, 0.3]) {
+      final q = (o.quality * step).round().clamp(15, 100);
+      final out = await FlutterImageCompress.compressWithFile(f.path,
+          quality: q,
+          format: _cf(fmt),
+          minWidth: 10000,
+          minHeight: 10000,
+          keepExif: false);
+      if (out != null && out.length < originalSize) return out;
+    }
+    return null;
+  }
+
   static Future<Uint8List> _pdf(List<Uint8List> jpgs) async {
     final doc = pw.Document();
     for (final b in jpgs) {
@@ -315,11 +332,28 @@ class ImageService {
     final results = <ProcessResult>[];
     for (var i = 0; i < files.length; i++) {
       final fmt = _resolve(o.format, files[i]);
-      final bytes = await _encode(files[i], o, fmt);
+      final size = await files[i].length();
+      var bytes = await _encode(files[i], o, fmt);
+
+      // Compressing must never make a photo bigger. Try lower qualities; if the
+      // photo is already as small as it gets, keep the original untouched.
+      if (o.ensureSmaller && bytes.length >= size) {
+        final smaller = await _encodeSmaller(files[i], o, fmt, size);
+        if (smaller == null) {
+          final ext = _ext(files[i]);
+          final kept = File('${dir.path}/pixelcompress_${stamp}_$i.$ext');
+          await files[i].copy(kept.path);
+          results.add(ProcessResult(kept, 'Photo ${i + 1}.$ext', size, size,
+              original: files[i], alreadyCompressed: true));
+          onProgress(i + 1, files.length);
+          continue;
+        }
+        bytes = smaller;
+      }
+
       final out = File('${dir.path}/pixelcompress_${stamp}_$i.${fmt.ext}');
       await out.writeAsBytes(bytes);
-      results.add(ProcessResult(out, 'Photo ${i + 1}.${fmt.ext}',
-          await files[i].length(), bytes.length,
+      results.add(ProcessResult(out, 'Photo ${i + 1}.${fmt.ext}', size, bytes.length,
           original: files[i]));
       onProgress(i + 1, files.length);
     }

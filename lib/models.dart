@@ -38,6 +38,9 @@ class ProcessOptions {
   double? cropAspect; // width / height
   int blurRadius = 0;
   bool mergePdf = true;
+
+  /// Compress tool only: never hand back a file bigger than the original.
+  bool ensureSmaller = false;
   int? targetKb; // compress to at most this many KB (compress tool only)
 
   /// Hand-drawn crop frames, per photo path, as fractions (0..1) of the photo.
@@ -56,8 +59,11 @@ class ProcessResult {
   final int newBytes;
   final bool isImage;
   final File? original;
+
+  /// true when compressing could not make the photo smaller, so the original was kept.
+  final bool alreadyCompressed;
   ProcessResult(this.file, this.label, this.originalBytes, this.newBytes,
-      {this.isImage = true, this.original});
+      {this.isImage = true, this.original, this.alreadyCompressed = false});
 
   double get savedPct =>
       originalBytes == 0 ? 0 : (1 - newBytes / originalBytes) * 100;

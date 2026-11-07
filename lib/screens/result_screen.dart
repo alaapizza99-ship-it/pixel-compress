@@ -72,7 +72,9 @@ class ResultScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(saved >= 0
+              Text(results.every((r) => r.alreadyCompressed)
+                  ? context.tr('all_already_compressed')
+                  : saved >= 0
                   ? context.tr('you_saved', {'n': saved.toStringAsFixed(0)})
                   : context
                       .tr('result_larger', {'n': (-saved).toStringAsFixed(0)})),
@@ -110,7 +112,7 @@ class ResultScreen extends StatelessWidget {
 
   Widget _row(BuildContext context, ProcessResult r, int index, ColorScheme cs) {
     final pct = r.savedPct;
-    final canCompare = r.isImage && r.original != null;
+    final canCompare = r.isImage && r.original != null && !r.alreadyCompressed;
     final ext = r.file.path.split('.').last;
     final name = r.isImage
         ? '${context.tr('photo')} ${index + 1}.$ext'
@@ -157,6 +159,12 @@ class ResultScreen extends StatelessWidget {
                   '${fmtBytes(r.originalBytes)}  →  ${fmtBytes(r.newBytes)}'
                   '  (${pct >= 0 ? '-' : '+'}${pct.abs().toStringAsFixed(0)}%)',
                   textDirection: TextDirection.ltr),
+              if (r.alreadyCompressed)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(context.tr('already_compressed'),
+                      style: TextStyle(fontSize: 12, color: cs.primary)),
+                ),
             ]),
           ),
           if (canCompare) const Icon(Icons.compare_rounded),

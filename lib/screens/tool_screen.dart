@@ -39,6 +39,7 @@ class _ToolScreenState extends State<ToolScreen> {
       case Tool.compress:
         _o.quality = 60;
         _o.format = OutFormat.jpg;
+        _o.ensureSmaller = true;
         break;
       case Tool.resize:
         _o.resize = ResizeKind.dimensions;

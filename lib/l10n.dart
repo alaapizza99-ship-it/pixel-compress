@@ -100,6 +100,9 @@ const Map<String, Map<String, String>> _s = {
         'PixelCompress needs an internet connection. Connect and try again, or subscribe to use it offline and without ads.',
     'retry': 'Try again',
     'err_offline': 'No internet connection. Connect to keep using PixelCompress.',
+    'already_compressed':
+        'This photo is already compressed - the original was kept. To shrink it more, choose "Target size" and enter a custom size (KB).',
+    'all_already_compressed': 'These photos are already compressed - nothing more to save.',
     'skip': 'Skip',
     'next': 'Next',
     'get_started': 'Get started',
@@ -199,6 +202,9 @@ const Map<String, Map<String, String>> _s = {
         'يحتاج PixelCompress إلى اتصال بالإنترنت. اتصل ثم حاول مرة أخرى، أو اشترك لاستخدامه بدون إنترنت وبدون إعلانات.',
     'retry': 'حاول مرة أخرى',
     'err_offline': 'لا يوجد اتصال بالإنترنت. اتصل لمتابعة استخدام PixelCompress.',
+    'already_compressed':
+        'الصورة مضغوطة بالفعل - تم الإبقاء على الأصلية. لتصغيرها أكثر اختر "حجم محدد" ثم اكتب "حجم مخصص (كيلوبايت)".',
+    'all_already_compressed': 'هذه الصور مضغوطة بالفعل - لا يمكن توفير مساحة أكثر.',
     'skip': 'تخطي',
     'next': 'التالي',
     'get_started': 'ابدأ الآن',
