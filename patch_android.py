@@ -18,6 +18,24 @@ t = t.replace('<application', perms + '    <application', 1)
 meta = ('        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" '
         f'android:value="{app_id}"/>\n')
 t = t.replace('</application>', meta + '    </application>', 1)
+
+# The launch crash happens inside WorkManager's automatic start-up (androidx.startup).
+# Remove that automatic initializer so the app no longer touches WorkManager at launch.
+if 'xmlns:tools' not in t:
+    t = t.replace('<manifest ', '<manifest xmlns:tools="http://schemas.android.com/tools" ', 1)
+provider = (
+    '        <provider\n'
+    '            android:name="androidx.startup.InitializationProvider"\n'
+    '            android:authorities="${applicationId}.androidx-startup"\n'
+    '            android:exported="false"\n'
+    '            tools:node="merge">\n'
+    '            <meta-data\n'
+    '                android:name="androidx.work.WorkManagerInitializer"\n'
+    '                android:value="androidx.startup"\n'
+    '                tools:node="remove" />\n'
+    '        </provider>\n'
+)
+t = t.replace('</application>', provider + '    </application>', 1)
 m.write_text(t)
 print('AdMob app id:', app_id)
 
