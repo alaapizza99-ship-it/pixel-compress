@@ -45,7 +45,7 @@ jobs:
             echo "Release signing: not configured (debug-signed build - NOT for Play Store)"
           fi
 
-      - name: Patch permissions, minSdk, launch screen, signing
+      - name: Patch permissions, ads, minSdk, launch screen, signing
         run: python3 scripts/patch_android.py
 
       - run: flutter pub get
@@ -70,3 +70,29 @@ jobs:
           name: PixelCompress-AAB
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
+
+  # Opens the freshly built APK on an emulator and reports if it crashes.
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: PixelCompress-APK
+          path: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch the app on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          script: bash ./scripts/smoke.sh
