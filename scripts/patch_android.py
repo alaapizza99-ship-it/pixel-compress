@@ -18,6 +18,24 @@ t = t.replace('<application', perms + '    <application', 1)
 meta = ('        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" '
         f'android:value="{app_id}"/>\n')
 t = t.replace('</application>', meta + '    </application>', 1)
+
+# The launch crash happens inside WorkManager's automatic start-up (androidx.startup).
+# Remove that automatic initializer so the app no longer touches WorkManager at launch.
+if 'xmlns:tools' not in t:
+    t = t.replace('<manifest ', '<manifest xmlns:tools="http://schemas.android.com/tools" ', 1)
+provider = (
+    '        <provider\n'
+    '            android:name="androidx.startup.InitializationProvider"\n'
+    '            android:authorities="${applicationId}.androidx-startup"\n'
+    '            android:exported="false"\n'
+    '            tools:node="merge">\n'
+    '            <meta-data\n'
+    '                android:name="androidx.work.WorkManagerInitializer"\n'
+    '                android:value="androidx.startup"\n'
+    '                tools:node="remove" />\n'
+    '        </provider>\n'
+)
+t = t.replace('</application>', provider + '    </application>', 1)
 m.write_text(t)
 print('AdMob app id:', app_id)
 
@@ -38,6 +56,39 @@ for d in ('drawable', 'drawable-v21'):
     f = pathlib.Path('android/app/src/main/res') / d / 'launch_background.xml'
     if f.exists():
         f.write_text(launch)
+
+# ---- launch-crash fix ----
+# AdMob pulls in WorkManager (Room). R8 removed the constructor of Room's generated
+# WorkDatabase_Impl, so the app died at startup with "Failed to create an instance of
+# androidx.work.impl.WorkDatabase". Fix: switch R8 minification off for the release
+# build and also keep the needed classes in case it is switched back on.
+RULES = (
+    '-keep class * extends androidx.room.RoomDatabase { <init>(); }\n'
+    '-keep class androidx.work.impl.WorkDatabase_Impl { <init>(); }\n'
+    '-keep class androidx.work.** { *; }\n'
+    '-dontwarn androidx.work.**\n'
+    '-dontwarn androidx.room.paging.**\n'
+)
+rules_file = pathlib.Path('android/app/proguard-rules.pro')
+rules_file.parent.mkdir(parents=True, exist_ok=True)
+rules_file.write_text(RULES)
+
+_kts = pathlib.Path('android/app/build.gradle.kts')
+if _kts.exists():
+    _s = _kts.read_text()
+    if 'isMinifyEnabled' not in _s:
+        _s2, _n = re.subn(
+            r'(\n[ \t]*release\s*\{)',
+            lambda mo: mo.group(1) + (
+                '\n            isMinifyEnabled = false'
+                '\n            isShrinkResources = false'
+                '\n            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")'),
+            _s, count=1)
+        if _n == 1:
+            _kts.write_text(_s2)
+            print('R8 minification disabled for release + keep rules written.')
+        else:
+            print('WARNING: could not find the release block; only keep rules were written.')
 
 # ---- release signing ----
 # If android/key.properties exists (written by the workflow from GitHub secrets)
