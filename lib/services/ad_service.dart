@@ -4,12 +4,16 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
 import 'premium_service.dart';
 
+enum RewardResult { earned, dismissed, unavailable }
+
 class AdService {
   static const _testBanner = 'ca-app-pub-3940256099942544/6300978111';
   static const _testInter = 'ca-app-pub-3940256099942544/1033173712';
+  static const _testRewarded = 'ca-app-pub-3940256099942544/5224354917';
 
   static String get bannerId => kUseTestAds ? _testBanner : kBannerUnitId;
   static String get _interId => kUseTestAds ? _testInter : kInterstitialUnitId;
+  static String get _rewardedId => kUseTestAds ? _testRewarded : kRewardedUnitId;
 
   /// Ads are shown only when enabled and the user is not a paying subscriber.
   static bool get shouldShowAds => kAdsEnabled && !PremiumService.isPremium.value;
@@ -102,6 +106,47 @@ class AdService {
       },
     );
     ad.show();
+    return done.future;
+  }
+
+  /// Loads and shows a rewarded ad. The user has already chosen to watch it.
+  static Future<RewardResult> showRewarded() async {
+    if (!kAdsEnabled || !sdkReady.value) return RewardResult.unavailable;
+    final loaded = Completer<RewardedAd?>();
+    RewardedAd.load(
+      adUnitId: _rewardedId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          if (!loaded.isCompleted) loaded.complete(ad);
+        },
+        onAdFailedToLoad: (_) {
+          if (!loaded.isCompleted) loaded.complete(null);
+        },
+      ),
+    );
+    final ad = await loaded.future
+        .timeout(const Duration(seconds: 15), onTimeout: () => null);
+    if (ad == null) return RewardResult.unavailable;
+
+    final done = Completer<RewardResult>();
+    var earned = false;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (a) {
+        a.dispose();
+        _last = DateTime.now(); // no interstitial right after a rewarded ad
+        if (!done.isCompleted) {
+          done.complete(earned ? RewardResult.earned : RewardResult.dismissed);
+        }
+      },
+      onAdFailedToShowFullScreenContent: (a, _) {
+        a.dispose();
+        if (!done.isCompleted) done.complete(RewardResult.unavailable);
+      },
+    );
+    ad.show(onUserEarnedReward: (_, __) {
+      earned = true;
+    });
     return done.future;
   }
 }

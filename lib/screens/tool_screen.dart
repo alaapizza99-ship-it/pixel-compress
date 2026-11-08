@@ -6,6 +6,8 @@ import '../models.dart';
 import '../services/ad_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/premium_service.dart';
+import '../services/unlock_service.dart';
+import '../config/ad_config.dart';
 import '../services/image_service.dart';
 import '../widgets/banner_ad_widget.dart';
 import 'crop_editor_screen.dart';
@@ -117,6 +119,14 @@ class _ToolScreenState extends State<ToolScreen> {
       _o.targetKb = null;
     }
 
+    // Batches over the free limit and "Target size" need one rewarded ad.
+    if (_needsUnlock && !UnlockService.isUnlocked) {
+      final ok = await UnlockService.request(context);
+      if (!mounted) return;
+      setState(() {});
+      if (!ok) return;
+    }
+
     FocusScope.of(context).unfocus();
     setState(() {
       _busy = true;
@@ -140,6 +150,31 @@ class _ToolScreenState extends State<ToolScreen> {
     }
   }
 
+  bool get _needsUnlock =>
+      (widget.tool == Tool.compress && _byTarget) ||
+      _files.length > kFreeBatchLimit;
+
+  Widget _unlockHint(ColorScheme cs) {
+    if (!_needsUnlock || UnlockService.isUnlocked) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: cs.primary.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        Icon(Icons.lock_outline_rounded, color: cs.primary, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+              context.tr('unlock_hint',
+                  {'limit': kFreeBatchLimit, 'min': kUnlockMinutes}),
+              style: const TextStyle(fontSize: 13)),
+        ),
+      ]),
+    );
+  }
+
   // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
@@ -151,6 +186,7 @@ class _ToolScreenState extends State<ToolScreen> {
         children: [
           _photos(cs),
           const SizedBox(height: 16),
+          _unlockHint(cs),
           _optionsCard(cs),
         ],
       ),
@@ -364,15 +400,7 @@ class _ToolScreenState extends State<ToolScreen> {
           selected: {_byTarget},
           onSelectionChanged: (s) => setState(() => _byTarget = s.first),
         ),
-        if (!_byTarget) ...[
-          _label(context.tr('compression_level')),
-          Wrap(spacing: 8, children: [
-            _preset(context.tr('preset_small'), 30),
-            _preset(context.tr('preset_medium'), 60),
-            _preset(context.tr('preset_large'), 85),
-          ]),
-          _quality(),
-        ] else ...[
+        if (_byTarget) ...[
           _label(context.tr('max_size')),
           Wrap(spacing: 8, children: [
             for (final kb in const [50, 100, 200, 500, 1024])
@@ -396,9 +424,36 @@ class _ToolScreenState extends State<ToolScreen> {
           ),
           const SizedBox(height: 6),
           Text(context.tr('target_hint'), style: const TextStyle(fontSize: 12)),
+        ] else if (_o.format != OutFormat.png) ...[
+          _label(context.tr('compression_level')),
+          Wrap(spacing: 8, children: [
+            _preset(context.tr('preset_small'), 30),
+            _preset(context.tr('preset_medium'), 60),
+            _preset(context.tr('preset_large'), 85),
+          ]),
+          _quality(),
         ],
         _label(context.tr('output_format')),
-        _formatChips(const [OutFormat.jpg, OutFormat.webp]),
+        _formatChips(const [
+          OutFormat.jpg,
+          OutFormat.png,
+          OutFormat.webp,
+          OutFormat.heic,
+          OutFormat.pdf
+        ]),
+        if (_o.format == OutFormat.png && !_byTarget)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(context.tr('png_note'),
+                style: const TextStyle(fontSize: 12)),
+          ),
+        if (_o.format == OutFormat.pdf)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.tr('merge_pdf')),
+            value: _o.mergePdf,
+            onChanged: (v) => setState(() => _o.mergePdf = v),
+          ),
       ];
 
   List<Widget> _resizeOptions() => [

@@ -103,6 +103,19 @@ const Map<String, Map<String, String>> _s = {
     'already_compressed':
         'This photo is already compressed - the original was kept. To shrink it more, choose "Target size" and enter a custom size (KB).',
     'all_already_compressed': 'These photos are already compressed - nothing more to save.',
+    'unlock_title': 'Unlock with a short ad',
+    'unlock_body':
+        'Batches of more than {limit} photos and "Target size" are unlocked by watching one short ad. They then stay open for {min} minutes.',
+    'unlock_watch': 'Watch ad',
+    'unlock_cancel': 'Not now',
+    'unlock_incomplete': 'Watch the whole ad to unlock.',
+    'unlock_unavailable': 'No ad is available right now - unlocked for you this time.',
+    'unlock_try_later': 'No ad is available right now. Please try again later.',
+    'unlock_done': 'Unlocked for {min} minutes.',
+    'unlock_hint':
+        'More than {limit} photos at once, or "Target size", is unlocked by watching a short ad ({min} minutes).',
+    'png_note':
+        'PNG is lossless, so the file will not get much smaller. Choose JPG or WEBP for smaller files.',
     'skip': 'Skip',
     'next': 'Next',
     'get_started': 'Get started',
@@ -205,6 +218,19 @@ const Map<String, Map<String, String>> _s = {
     'already_compressed':
         'الصورة مضغوطة بالفعل - تم الإبقاء على الأصلية. لتصغيرها أكثر اختر "حجم محدد" ثم اكتب "حجم مخصص (كيلوبايت)".',
     'all_already_compressed': 'هذه الصور مضغوطة بالفعل - لا يمكن توفير مساحة أكثر.',
+    'unlock_title': 'افتح الميزة بإعلان قصير',
+    'unlock_body':
+        'معالجة أكثر من {limit} صور وميزة "حجم محدد" تُفتحان بمشاهدة إعلان قصير واحد، ثم تبقيان مفتوحتين لمدة {min} دقيقة.',
+    'unlock_watch': 'شاهد الإعلان',
+    'unlock_cancel': 'ليس الآن',
+    'unlock_incomplete': 'شاهد الإعلان كاملاً لفتح الميزة.',
+    'unlock_unavailable': 'لا يتوفر إعلان الآن - تم فتح الميزة لك هذه المرة.',
+    'unlock_try_later': 'لا يتوفر إعلان الآن. حاول مرة أخرى لاحقاً.',
+    'unlock_done': 'تم الفتح لمدة {min} دقيقة.',
+    'unlock_hint':
+        'معالجة أكثر من {limit} صور دفعة واحدة أو ميزة "حجم محدد" تُفتح بمشاهدة إعلان قصير (لمدة {min} دقيقة).',
+    'png_note':
+        'صيغة PNG بلا فقد في الجودة، فلن يصغر الملف كثيراً. اختر JPG أو WEBP لملفات أصغر.',
     'skip': 'تخطي',
     'next': 'التالي',
     'get_started': 'ابدأ الآن',
