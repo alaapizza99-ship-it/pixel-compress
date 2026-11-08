@@ -17,8 +17,8 @@ const String kAdmobAppId = 'ca-app-pub-3442559127752747~9947195595';
 
 // Your real ad unit IDs.
 const String kBannerUnitId = 'ca-app-pub-3442559127752747/3792850788';
-const String kInterstitialUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX'; // TODO: create in AdMob
-const String kRewardedUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX'; // TODO: create in AdMob
+const String kInterstitialUnitId = 'ca-app-pub-3442559127752747/9351941400';
+const String kRewardedUnitId = 'ca-app-pub-3442559127752747/2487150154';
 
 // Interstitial frequency caps (keeps users happy, protects ratings).
 const int kShowInterstitialEveryNTasks = 2;

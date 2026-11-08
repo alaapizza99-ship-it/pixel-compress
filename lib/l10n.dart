@@ -116,6 +116,7 @@ const Map<String, Map<String, String>> _s = {
         'More than {limit} photos at once, or "Target size", is unlocked by watching a short ad ({min} minutes).',
     'png_note':
         'PNG is lossless, so the file will not get much smaller. Choose JPG or WEBP for smaller files.',
+    'share_text_nolink': 'Compress, resize and convert photos with PixelCompress.',
     'skip': 'Skip',
     'next': 'Next',
     'get_started': 'Get started',
@@ -231,6 +232,7 @@ const Map<String, Map<String, String>> _s = {
         'معالجة أكثر من {limit} صور دفعة واحدة أو ميزة "حجم محدد" تُفتح بمشاهدة إعلان قصير (لمدة {min} دقيقة).',
     'png_note':
         'صيغة PNG بلا فقد في الجودة، فلن يصغر الملف كثيراً. اختر JPG أو WEBP لملفات أصغر.',
+    'share_text_nolink': 'اضغط صورك وغيّر حجمها وحوّل صيغتها مع PixelCompress.',
     'skip': 'تخطي',
     'next': 'التالي',
     'get_started': 'ابدأ الآن',

@@ -39,16 +39,11 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.star_rate_rounded),
-            title: Text(context.tr('rate_app')),
-            onTap: () => _open(
-                context, ['market://details?id=$kPackageName', kStoreUrl]),
-          ),
-          ListTile(
             leading: const Icon(Icons.share_rounded),
             title: Text(context.tr('share_app')),
-            onTap: () =>
-                Share.share(context.tr('share_text', {'url': kStoreUrl})),
+            onTap: () => Share.share(kStoreUrl.isEmpty
+                ? context.tr('share_text_nolink')
+                : context.tr('share_text', {'url': kStoreUrl})),
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_rounded),
