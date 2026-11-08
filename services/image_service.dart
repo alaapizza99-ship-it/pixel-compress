@@ -337,7 +337,7 @@ class ImageService {
 
       // Compressing must never make a photo bigger. Try lower qualities; if the
       // photo is already as small as it gets, keep the original untouched.
-      if (o.ensureSmaller && bytes.length >= size) {
+      if (o.ensureSmaller && fmt != OutFormat.png && bytes.length >= size) {
         final smaller = await _encodeSmaller(files[i], o, fmt, size);
         if (smaller == null) {
           final ext = _ext(files[i]);
