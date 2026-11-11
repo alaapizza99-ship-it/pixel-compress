@@ -90,6 +90,18 @@ if _kts.exists():
         else:
             print('WARNING: could not find the release block; only keep rules were written.')
 
+# ---- newer WorkManager ----
+# The smoke test showed AdMob pulling in WorkManager 2.7.0 / Room 2.2.5, which are too old to
+# create their database on current Android ("Failed to create an instance of WorkDatabase").
+# Declaring a newer WorkManager makes Gradle use it instead.
+if _kts.exists():
+    _s = _kts.read_text()
+    if 'androidx.work:work-runtime' not in _s:
+        _kts.write_text(_s.rstrip('\n') + '\n\ndependencies {\n    implementation("androidx.work:work-runtime:2.9.1")\n}\n')
+        print('WorkManager forced to 2.9.1')
+else:
+    print('WARNING: build.gradle.kts not found; WorkManager version not changed')
+
 # ---- release signing ----
 # If android/key.properties exists (written by the workflow from GitHub secrets)
 # the release build is signed with the upload key; otherwise it falls back to the
