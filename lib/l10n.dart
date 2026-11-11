@@ -97,7 +97,7 @@ const Map<String, Map<String, String>> _s = {
     'crop_error': 'Could not open this photo',
     'offline_title': 'No internet connection',
     'offline_body':
-        'PixelCompress needs an internet connection. Connect and try again, or subscribe to use it offline and without ads.',
+        'PixelCompress needs an internet connection. Connect and try again.',
     'retry': 'Try again',
     'err_offline': 'No internet connection. Connect to keep using PixelCompress.',
     'already_compressed':
@@ -213,7 +213,7 @@ const Map<String, Map<String, String>> _s = {
     'crop_error': 'تعذّر فتح هذه الصورة',
     'offline_title': 'لا يوجد اتصال بالإنترنت',
     'offline_body':
-        'يحتاج PixelCompress إلى اتصال بالإنترنت. اتصل ثم حاول مرة أخرى، أو اشترك لاستخدامه بدون إنترنت وبدون إعلانات.',
+        'يحتاج PixelCompress إلى اتصال بالإنترنت. اتصل ثم حاول مرة أخرى.',
     'retry': 'حاول مرة أخرى',
     'err_offline': 'لا يوجد اتصال بالإنترنت. اتصل لمتابعة استخدام PixelCompress.',
     'already_compressed':

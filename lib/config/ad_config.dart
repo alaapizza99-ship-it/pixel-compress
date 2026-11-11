@@ -1,16 +1,16 @@
 // ============================================================
 //  AD CONFIGURATION  -  the ONLY file you edit for monetization
 // ============================================================
-// Keep kUseTestAds = true until the app is published on Google Play.
-// While it is true, Google's TEST ad units are used (safe, no earnings).
-// When ready to earn: set kUseTestAds = false and fill in the unit IDs below.
-// Never click your own live ads - AdMob can ban the account.
+// kUseTestAds = false  -> REAL ads with the unit IDs below (earnings).
+// kUseTestAds = true   -> Google's TEST ads (safe, no earnings).
+// Never click your own live ads - AdMob can ban the account. Add your own
+// phone as a "Test device" in the AdMob console so it only sees test ads.
 
 // Master switch: set to false to turn ALL ads off (the unlock screens then
 // open the locked features for free).
 const bool kAdsEnabled = true;
 
-const bool kUseTestAds = true;
+const bool kUseTestAds = false;
 
 // AdMob App ID (from your AdMob account).
 const String kAdmobAppId = 'ca-app-pub-3442559127752747~9947195595';
