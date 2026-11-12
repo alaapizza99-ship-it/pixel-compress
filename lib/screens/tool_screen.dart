@@ -28,7 +28,7 @@ class _ToolScreenState extends State<ToolScreen> {
   final _o = ProcessOptions();
   final _wCtl = TextEditingController();
   final _hCtl = TextEditingController();
-  final _targetCtl = TextEditingController();
+  final _targetCtl = TextEditingController(text: '200');
   bool _busy = false;
   double _progress = 0;
   bool _byTarget = false; // compress tool: false = by quality, true = target size
@@ -378,7 +378,13 @@ class _ToolScreenState extends State<ToolScreen> {
                   value: _o.mergePdf,
                   onChanged: (v) => setState(() => _o.mergePdf = v),
                 ),
-              if (_o.format != OutFormat.png) _quality(),
+              _quality(),
+              if (_o.format == OutFormat.png)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(context.tr('png_note'),
+                      style: const TextStyle(fontSize: 12)),
+                ),
             ],
         },
       ),
@@ -402,18 +408,6 @@ class _ToolScreenState extends State<ToolScreen> {
         ),
         if (_byTarget) ...[
           _label(context.tr('max_size')),
-          Wrap(spacing: 8, children: [
-            for (final kb in const [50, 100, 200, 500, 1024])
-              ChoiceChip(
-                label: Text(kb == 1024 ? '1 MB' : '$kb KB'),
-                selected: _targetCtl.text.isEmpty && _targetKb == kb,
-                onSelected: (_) => setState(() {
-                  _targetCtl.clear();
-                  _targetKb = kb;
-                }),
-              ),
-          ]),
-          const SizedBox(height: 10),
           TextField(
             controller: _targetCtl,
             keyboardType: TextInputType.number,
@@ -424,7 +418,7 @@ class _ToolScreenState extends State<ToolScreen> {
           ),
           const SizedBox(height: 6),
           Text(context.tr('target_hint'), style: const TextStyle(fontSize: 12)),
-        ] else if (_o.format != OutFormat.png) ...[
+        ] else ...[
           _label(context.tr('compression_level')),
           Wrap(spacing: 8, children: [
             _preset(context.tr('preset_small'), 30),

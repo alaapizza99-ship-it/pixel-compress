@@ -97,10 +97,21 @@ Uint8List _pixelOps(Map<String, dynamic> a) {
   final blur = a['blur'] as int;
   if (blur > 0) image = img.gaussianBlur(image, radius: blur);
 
-  // Lossless intermediate only when the result is PNG; otherwise high-quality JPEG.
-  return a['png'] as bool
-      ? Uint8List.fromList(img.encodePng(image, level: 1))
-      : Uint8List.fromList(img.encodeJpg(image, quality: 95));
+  if (a['png'] as bool) {
+    // PNG is lossless, so "quality" here means the number of colours:
+    // 0 = keep every colour (lossless), otherwise reduce to that many colours.
+    final colors = a['pngColors'] as int;
+    var out = image;
+    if (colors > 0) {
+      out = img.quantize(image,
+          numberOfColors: colors,
+          quantizerType: img.QuantizerType.octree,
+          dither: img.DitherKernel.floydSteinberg);
+    }
+    return Uint8List.fromList(img.encodePng(out, level: 9));
+  }
+  // Otherwise a high-quality JPEG intermediate, finished by the native encoder.
+  return Uint8List.fromList(img.encodeJpg(image, quality: 95));
 }
 
 /// A downscaled, orientation-corrected copy of a photo for the crop editor.
@@ -165,8 +176,11 @@ class ImageService {
   static Future<Uint8List> _encode(
       File f, ProcessOptions o, OutFormat fmt) async {
     final cf = _cf(fmt);
-    final px = o.needsPixelFor(f);
-    if (o.targetKb != null && !px) {
+    final isPng = fmt == OutFormat.png;
+    // PNG always goes through the Dart encoder so its quality slider really works
+    // (the native PNG encoder ignores quality).
+    final px = o.needsPixelFor(f) || (isPng && o.targetKb == null);
+    if (o.targetKb != null && !o.needsPixelFor(f)) {
       return _encodeToTarget(f, o.targetKb! * 1024, cf);
     }
     if (!px) {
@@ -206,8 +220,11 @@ class ImageService {
       'w': o.width,
       'h': o.height,
       'blur': o.blurRadius,
-      'png': fmt == OutFormat.png,
+      'png': isPng,
+      'pngColors':
+          o.quality >= 90 ? 0 : (o.quality * 256 / 100).round().clamp(16, 256),
     });
+    if (isPng) return edited; // already the final PNG
     return FlutterImageCompress.compressWithList(edited,
         quality: o.quality, format: cf, minWidth: 10000, minHeight: 10000);
   }

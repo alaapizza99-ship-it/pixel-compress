@@ -115,7 +115,7 @@ const Map<String, Map<String, String>> _s = {
     'unlock_hint':
         'More than {limit} photos at once, or "Target size", is unlocked by watching a short ad ({min} minutes).',
     'png_note':
-        'PNG is lossless, so the file will not get much smaller. Choose JPG or WEBP for smaller files.',
+        'PNG keeps full quality at 90% and above. Lower the quality to reduce the number of colours and shrink the file (photos may look slightly grainy). For photos, JPG or WEBP give much smaller files.',
     'share_text_nolink': 'Compress, resize and convert photos with PixelCompress.',
     'skip': 'Skip',
     'next': 'Next',
@@ -231,7 +231,7 @@ const Map<String, Map<String, String>> _s = {
     'unlock_hint':
         'معالجة أكثر من {limit} صور دفعة واحدة أو ميزة "حجم محدد" تُفتح بمشاهدة إعلان قصير (لمدة {min} دقيقة).',
     'png_note':
-        'صيغة PNG بلا فقد في الجودة، فلن يصغر الملف كثيراً. اختر JPG أو WEBP لملفات أصغر.',
+        'صيغة PNG تحتفظ بالجودة الكاملة عند 90% فأكثر. قلّل الجودة لتقليل عدد الألوان وتصغير الملف (قد تبدو الصور أخشن قليلاً). وللصور الفوتوغرافية يعطي JPG أو WEBP ملفات أصغر بكثير.',
     'share_text_nolink': 'اضغط صورك وغيّر حجمها وحوّل صيغتها مع PixelCompress.',
     'skip': 'تخطي',
     'next': 'التالي',
