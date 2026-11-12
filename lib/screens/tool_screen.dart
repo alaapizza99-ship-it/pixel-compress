@@ -28,7 +28,7 @@ class _ToolScreenState extends State<ToolScreen> {
   final _o = ProcessOptions();
   final _wCtl = TextEditingController();
   final _hCtl = TextEditingController();
-  final _targetCtl = TextEditingController(text: '200');
+  final _targetCtl = TextEditingController();
   bool _busy = false;
   double _progress = 0;
   bool _byTarget = false; // compress tool: false = by quality, true = target size
@@ -112,8 +112,8 @@ class _ToolScreenState extends State<ToolScreen> {
     }
 
     if (widget.tool == Tool.compress && _byTarget) {
-      final kb = int.tryParse(_targetCtl.text) ?? _targetKb;
-      if (kb < 10) return _snack(context.tr('err_target'));
+      final kb = int.tryParse(_targetCtl.text.trim());
+      if (kb == null || kb < 10) return _snack(context.tr('err_target'));
       _o.targetKb = kb;
     } else {
       _o.targetKb = null;
@@ -414,6 +414,7 @@ class _ToolScreenState extends State<ToolScreen> {
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
                 labelText: context.tr('target_custom'),
+                hintText: '200',
                 border: const OutlineInputBorder()),
           ),
           const SizedBox(height: 6),

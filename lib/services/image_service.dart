@@ -103,10 +103,9 @@ Uint8List _pixelOps(Map<String, dynamic> a) {
     final colors = a['pngColors'] as int;
     var out = image;
     if (colors > 0) {
-      out = img.quantize(image,
-          numberOfColors: colors,
-          quantizerType: img.QuantizerType.octree,
-          dither: img.DitherKernel.floydSteinberg);
+      // Only the colour count is passed: the other options differ between versions
+      // of the image package, and a mismatch breaks the build.
+      out = img.quantize(image, numberOfColors: colors);
     }
     return Uint8List.fromList(img.encodePng(out, level: 9));
   }
