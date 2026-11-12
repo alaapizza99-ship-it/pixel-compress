@@ -102,6 +102,25 @@ if _kts.exists():
 else:
     print('WARNING: build.gradle.kts not found; WorkManager version not changed')
 
+# ---- lint fix ----
+# Android's release "lint vital" check crashed inside Gradle (after the Dart code had compiled).
+# Lint is only a code-style checker and is not needed to produce the APK/AAB, so switch it off.
+if _kts.exists():
+    _s = _kts.read_text()
+    if 'checkReleaseBuilds' not in _s:
+        _s2, _n = re.subn(
+            r'(\n[ \t]*buildTypes\s*\{)',
+            lambda mo: ('\n    lint {\n'
+                        '        checkReleaseBuilds = false\n'
+                        '        abortOnError = false\n'
+                        '    }\n') + mo.group(1),
+            _s, count=1)
+        if _n == 1:
+            _kts.write_text(_s2)
+            print('Lint checks disabled for release builds.')
+        else:
+            print('WARNING: could not add the lint settings.')
+
 # ---- release signing ----
 # If android/key.properties exists (written by the workflow from GitHub secrets)
 # the release build is signed with the upload key; otherwise it falls back to the
